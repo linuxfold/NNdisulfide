@@ -28,7 +28,7 @@ All three stages are wrapped as CLI sub-commands, so one file drives the whole p
     conda activate ssbond
     pip install gemmi torch pandas numpy tqdm scikit-learn
 
-**3 | Build**
+**3 | Build & Extract Data**
 
       python NNdisulfide.py build \
       --data_dir /data/pdb-mmCIF \
