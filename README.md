@@ -39,7 +39,7 @@ All three stages are wrapped as CLI sub-commands, so one file drives the whole p
 
       python NNdisulfide.py train \
       --dataset disulfides.csv \
-      --model_file ss_model.pt \
+      --model_file ss_model.pt
 
 **5 | Predict**
 
