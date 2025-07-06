@@ -45,7 +45,7 @@ All three stages are wrapped as CLI sub-commands, so one file drives the whole p
 **5 | Predict**
 
       python NNdisulfide.py predict \
-      --model_file ss_model.pt \
-      --structure my_enzyme.pdb \
+      --model ss_model.pt \
+      --structure my_enzyme.cif \
       --top_k 25 \
       --out my_enzyme_ss_predictions.csv
