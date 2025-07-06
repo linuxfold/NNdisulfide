@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-disulfide_predictor.py   ·   2025-07-05
+NNdisulfide.py   ·   2025-07-05
 
 build   – create CSV of (+)/(–) Cys-Cys pairs with 16 features
 train   – fit a small FFNN (16→1) using BCEWithLogits
