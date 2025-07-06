@@ -1,6 +1,6 @@
 # NNdisulfide
 Neural network to Predict Artificial Disulfide Bonds
-Given a PDF or CIF structure, predict which 2 residues could be mutated to create an artificial disulfide bonds
+Given a PDF or CIF structure, predict which 2 residues could be mutated to create an artificial disulfide bond
 
 **Installation:**
 
