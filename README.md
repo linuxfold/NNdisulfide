@@ -6,6 +6,7 @@ This model was trained on the same mmcif files that are used as part of the AF3 
 
 
 **1 | What the script does**
+
 **build**	
 
 Parse every .mmCIF in a directory, pull out all annotated disulfide bonds (inter- & intra-chain) and generate matching negative examples.	Uses gemmi for blazing-fast CIF access and multiprocessing to scale across cores.
