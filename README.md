@@ -4,8 +4,8 @@ Given a PDF or CIF structure, predict which 2 residues could be mutated to creat
 
 **Installation:**
 
-    conda create -n ssbond python=3.11
-    conda activate ssbond
+    conda create -n nndisulfide python=3.11
+    conda activate nndisulfide
     pip install gemmi torch pandas numpy tqdm scikit-learn
 
 **Build**
