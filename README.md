@@ -2,6 +2,23 @@
 Neural network to Predict Artificial Disulfide Bonds
 Given a PDF or CIF structure, predict which 2 residues could be mutated to create an artificial disulfide bond
 
+
+**1 | What the script does**
+**build**	
+
+Parse every .mmCIF in a directory, pull out all annotated disulfide bonds (inter- & intra-chain) and generate matching negative examples.	Uses gemmi for blazing-fast CIF access and multiprocessing to scale across cores.
+
+**train**	
+
+Learn to score cysteine-pair compatibility.	A lightweight PyTorch feed-forward network (3 numeric features → 16→8→1). Default training loop + early model checkpointing.
+
+**predict**	
+
+Scan a new structure, enumerate residue pairs close enough to fuse, and rank them by probability they could form a disulfide once both are cysteines.	CA-distance cutoff defaults to 8 Å; adjust with --cutoff. Results land in predictions.csv (chain, residue numbers, prob).
+
+All three stages are wrapped as CLI sub-commands, so one file drives the whole pipeline.
+
+
 **Installation:**
 
     conda create -n ssbond python=3.11
