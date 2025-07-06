@@ -22,27 +22,27 @@ Scan a new structure, enumerate residue pairs close enough to fuse, and rank the
 All three stages are wrapped as CLI sub-commands, so one file drives the whole pipeline.
 
 
-**Installation:**
+**2 | Installation:**
 
     conda create -n ssbond python=3.11
     conda activate ssbond
     pip install gemmi torch pandas numpy tqdm scikit-learn
 
-**Build**
+**3 | Build**
 
       python NNdisulfide.py build \
       --data_dir /data/pdb-mmCIF \
       --out_csv disulfides.csv \
       --nproc 32        # adapt to your CPU budget
 
-**Train**
+**4 | Train**
 
       python NNdisulfide.py train \
       --dataset disulfides.csv \
       --model_file ss_model.pt \
       --epochs 30
 
-**Predict**
+**5 | Predict**
 
       python NNdisulfide.py predict \
       --model_file ss_model.pt \
