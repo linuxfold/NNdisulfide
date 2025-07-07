@@ -25,8 +25,13 @@ All three stages are wrapped as CLI sub-commands, so one file drives the whole p
 
 **2 | Installation:**
 
+    git clone https://github.com/linuxfold/NNdisulfide
+    cd NNdisulfide
+
     conda create -n ssbond python=3.11
+    
     conda activate ssbond
+    
     pip install gemmi torch pandas numpy tqdm scikit-learn
 
 **3 | Build & Extract Data**
