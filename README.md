@@ -171,3 +171,7 @@ The output CSV contains:
 ## License
 
 This project is licensed under the MIT License.
+
+Permission is granted to use, copy, modify, merge, publish, distribute,
+sublicense, and/or sell copies of this software, subject to preservation of
+this notice and the standard MIT License warranty disclaimer.
