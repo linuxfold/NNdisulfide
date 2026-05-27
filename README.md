@@ -1,82 +1,12 @@
 # NNdisulfide
 
-A lightweight feed-forward neural network for predicting candidate artificial disulfide bonds from protein structure files.
+Simple feed-forward neural network to predict candidate artificial disulfide bonds.
 
-Given a PDB or mmCIF structure, NNdisulfide scans residue pairs that are close enough in 3D space and ranks pairs that may be suitable for mutation to cysteine in order to form an engineered disulfide bond.
+Given a PDB or mmCIF structure, NNdisulfide scans nearby residue pairs and ranks pairs that may be suitable for mutation to cysteine to create an engineered disulfide bond.
 
-The included `ss_model.pt` checkpoint can be used directly for prediction, or a new model can be trained from a directory of PDB/mmCIF structures.
+You can use the included `ss_model.pt` directly for prediction. It was trained on the same mmCIF files used as part of the AF3 database, including newer files up to 5/24/25.
 
-## What NNdisulfide does
-
-NNdisulfide provides three CLI subcommands:
-
-| Command   | Purpose                                                                                                                                                                |
-| --------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `build`   | Parse a directory of structures, extract annotated or geometry-derived disulfide-positive cysteine pairs, generate nearby negative examples, and write a training CSV. |
-| `train`   | Train a small PyTorch feed-forward neural network on the generated residue-pair feature table.                                                                         |
-| `predict` | Scan a new structure, enumerate nearby residue pairs, score each pair with the trained model, and write the top predictions to CSV.                                    |
-
-## How the model handles arbitrary-size PDB/mmCIF files
-
-The neural network is **not** given the whole protein structure as one fixed-size input.
-
-Instead, NNdisulfide converts each structure into a variable number of residue-pair examples:
-
-1. The input PDB/mmCIF file is parsed with `gemmi`.
-2. Residues are enumerated from the first model in the structure.
-3. All residue pairs are considered.
-4. Pairs are filtered by CB–CB distance using `--cutoff`, which defaults to `8.0 Å`.
-5. Each remaining candidate pair is converted into a fixed-length vector of 16 numeric features.
-6. The neural network scores each 16-feature row independently.
-
-So a small protein may produce hundreds of candidate rows, while a larger protein may produce thousands or more. The number of rows can vary, but each row has the same 16-feature shape expected by the model.
-
-## Model input features
-
-Each candidate residue pair is represented by the following 16 numeric features:
-
-| Feature      | Description                                                                                              |
-| ------------ | -------------------------------------------------------------------------------------------------------- |
-| `ca_dist`    | CA–CA distance between the two residues, transformed with `log1p`.                                       |
-| `cb_dist`    | CB–CB distance between the two residues, transformed with `log1p`. Glycine uses CA as a fallback for CB. |
-| `seq_sep`    | Absolute sequence-number separation, transformed with `log1p`.                                           |
-| `same_chain` | `1` if both residues are on the same chain, otherwise `0`.                                               |
-| `phi1`       | Backbone phi angle for residue 1, scaled by `/180`.                                                      |
-| `psi1`       | Backbone psi angle for residue 1, scaled by `/180`.                                                      |
-| `chi1_1`     | Chi1-like side-chain torsion for residue 1, scaled by `/180`.                                            |
-| `ang1`       | Local CA angle for residue 1, scaled by `/180`.                                                          |
-| `asa1`       | Approximate solvent-accessible surface area value for residue 1.                                         |
-| `b1`         | Mean B-factor for residue 1.                                                                             |
-| `phi2`       | Backbone phi angle for residue 2, scaled by `/180`.                                                      |
-| `psi2`       | Backbone psi angle for residue 2, scaled by `/180`.                                                      |
-| `chi1_2`     | Chi1-like side-chain torsion for residue 2, scaled by `/180`.                                            |
-| `ang2`       | Local CA angle for residue 2, scaled by `/180`.                                                          |
-| `asa2`       | Approximate solvent-accessible surface area value for residue 2.                                         |
-| `b2`         | Mean B-factor for residue 2.                                                                             |
-
-Missing angular values are replaced with `0.0` before scoring.
-
-## Neural network architecture
-
-The current model architecture is:
-
-```text
-16 input features → 32 hidden units → 16 hidden units → 1 output logit
-```
-
-In PyTorch terms:
-
-```python
-nn.Linear(16, 32)
-nn.ReLU()
-nn.Linear(32, 16)
-nn.ReLU()
-nn.Linear(16, 1)
-```
-
-The output logit is converted to a probability with `sigmoid` during prediction.
-
-## Installation
+## Quick start
 
 ```bash
 git clone https://github.com/linuxfold/NNdisulfide
@@ -88,37 +18,7 @@ conda activate ssbond
 pip install gemmi torch pandas numpy tqdm scikit-learn
 ```
 
-## Build a training dataset
-
-```bash
-python NNdisulfide.py build \
-  --data_dir /data/pdb-mmCIF \
-  --out_csv disulfides.csv \
-  --nproc 32
-```
-
-The `build` command searches the input directory recursively for:
-
-* `.cif`
-* `.mmcif`
-* `.cif.gz`
-* `.mmcif.gz`
-* `.pdb`
-
-It writes one row per cysteine-pair training example. Positive examples come from annotated disulfide connections and close SG–SG geometry. Negative examples are generated from nearby non-positive cysteine pairs.
-
-## Train a model
-
-```bash
-python NNdisulfide.py train \
-  --dataset disulfides.csv \
-  --model ss_model.pt \
-  --epochs 1000
-```
-
-Training uses binary cross-entropy with logits and the Adam optimizer. The best validation checkpoint is saved to the path given by `--model`.
-
-## Predict candidate artificial disulfides
+Run prediction with the included model:
 
 ```bash
 python NNdisulfide.py predict \
@@ -128,45 +28,114 @@ python NNdisulfide.py predict \
   --out my_enzyme_ss_predictions.csv
 ```
 
-Optional cutoff example:
+For PDB input:
 
 ```bash
 python NNdisulfide.py predict \
   --model ss_model.pt \
   --structure my_enzyme.pdb \
-  --cutoff 8.0 \
   --top_k 25 \
   --out my_enzyme_ss_predictions.csv
 ```
 
 The output CSV contains:
 
-| Column   | Description                                                                                                  |
-| -------- | ------------------------------------------------------------------------------------------------------------ |
-| `chain1` | Chain ID for residue 1.                                                                                      |
-| `res1`   | Residue number for residue 1.                                                                                |
-| `chain2` | Chain ID for residue 2.                                                                                      |
-| `res2`   | Residue number for residue 2.                                                                                |
-| `prob`   | Predicted probability that the pair is compatible with a disulfide-like geometry after mutation to cysteine. |
+| Column   | Description                                  |
+| -------- | -------------------------------------------- |
+| `chain1` | Chain ID for residue 1                       |
+| `res1`   | Residue number for residue 1                 |
+| `chain2` | Chain ID for residue 2                       |
+| `res2`   | Residue number for residue 2                 |
+| `prob`   | Model score for the candidate disulfide pair |
 
-## Notes and limitations
+## Commands
 
-* NNdisulfide is a pairwise geometric classifier, not a full protein-design model.
-* Predictions should be treated as ranked candidates for further structural inspection, modeling, and experimental validation.
-* The model scores residue pairs independently and does not explicitly model global folding changes caused by mutation.
+NNdisulfide has three CLI subcommands:
+
+| Command   | What it does                                                        |
+| --------- | ------------------------------------------------------------------- |
+| `predict` | Scan a PDB/mmCIF file and rank candidate artificial disulfide bonds |
+| `build`   | Parse a directory of structures and build a training CSV            |
+| `train`   | Train a new PyTorch model from the CSV                              |
+
+## Predict
+
+```bash
+python NNdisulfide.py predict \
+  --model ss_model.pt \
+  --structure input.cif \
+  --cutoff 8.0 \
+  --top_k 25 \
+  --out predictions.csv
+```
+
+Arguments:
+
+| Argument      | Description                                                |
+| ------------- | ---------------------------------------------------------- |
+| `--model`     | Path to a trained `.pt` model file                         |
+| `--structure` | Input `.pdb`, `.cif`, or `.mmcif` structure                |
+| `--cutoff`    | CB–CB distance cutoff for candidate pairs, default `8.0 Å` |
+| `--top_k`     | Number of top predictions to write                         |
+| `--out`       | Output CSV file                                            |
+
+## Build training data
+
+```bash
+python NNdisulfide.py build \
+  --data_dir /data/pdb-mmCIF \
+  --out_csv disulfides.csv \
+  --nproc 32
+```
+
+The build command searches recursively for:
+
+* `.cif`
+* `.mmcif`
+* `.cif.gz`
+* `.mmcif.gz`
+* `.pdb`
+
+It extracts positive cysteine-pair examples from annotated disulfide bonds and close SG–SG geometry, then generates nearby negative examples.
+
+## Train
+
+```bash
+python NNdisulfide.py train \
+  --dataset disulfides.csv \
+  --model ss_model.pt \
+  --epochs 1000
+```
+
+Training uses PyTorch with Adam and binary cross-entropy with logits. The best validation checkpoint is saved to `--model`.
+
+## Model details
+
+NNdisulfide does not feed the whole protein into the neural network. Instead, it converts each structure into residue-pair candidates. Each candidate pair is represented by 16 numeric features, and the model scores each pair independently.
+
+Current network architecture:
+
+```text
+16 input features → 32 hidden units → 16 hidden units → 1 output logit
+```
+
+The 16 features are:
+
+```text
+ca_dist, cb_dist, seq_sep, same_chain,
+phi1, psi1, chi1_1, ang1, asa1, b1,
+phi2, psi2, chi1_2, ang2, asa2, b2
+```
+
+Distances and sequence separation are transformed with `log1p`; backbone and side-chain angles are scaled by `/180`.
+
+## Notes
+
+* Predictions are ranked candidates for further inspection, modeling, or experimental validation.
+* The model is a pairwise geometric classifier, not a full protein-design model.
 * Only the first model in a multi-model structure is used.
-* Input quality matters: missing atoms, unusual numbering, alternate conformations, or incomplete residues can affect feature extraction.
-* Glycine uses CA as a fallback when CB is unavailable.
-
-## Dependencies
-
-* Python 3.11
-* gemmi
-* torch
-* pandas
-* numpy
-* tqdm
-* scikit-learn
+* Missing atoms or unusual residue numbering may affect results.
+* Glycine uses CA as a fallback for CB.
 
 ## License
 
