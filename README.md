@@ -170,4 +170,4 @@ The output CSV contains:
 
 ## License
 
-Add license information here.
+This project is licensed under the MIT License.
